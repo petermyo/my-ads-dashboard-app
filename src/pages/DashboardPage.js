@@ -4,12 +4,10 @@ import Input from '../components/Common/Input';
 import Select from '../components/Common/Select';
 import Button from '../components/Common/Button';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
-import { formatCurrency, truncateText, getCostMetricLabel } from '../utils/helpers'; // Ensure getCostMetricLabel is imported
+import { formatCurrency, truncateText, getCostMetricLabel } from '../utils/helpers';
 
-// Use process.env to access the environment variable set in Cloudflare Pages.
-// For Create React App, client-side environment variables must be prefixed with REACT_APP_.
-// If REACT_APP_DATA_URL is not set, it will fall back to the default opensheet URL.
-const DATA_URL = env.REACT_APP_DATA_URL;
+// Frontend will now call our Pages Function endpoint, not the raw DATA_URL
+const API_DATA_ENDPOINT = '/api/ads-data';
 
 const DashboardPage = ({ onMessage }) => {
   const [adsData, setAdsData] = useState([]);
@@ -21,8 +19,8 @@ const DashboardPage = ({ onMessage }) => {
   const [adsNameSearch, setAdsNameSearch] = useState('');
   const [platformFilter, setPlatformFilter] = useState('All');
   const [objectiveFilter, setObjectiveFilter] = useState('All');
-  const [deviceFilter, setDeviceFilter] = useState('All'); // Used for device filter
-  const [segmentFilter, setSegmentFilter] = useState('All'); // Used for segment filter
+  const [deviceFilter, setDeviceFilter] = useState('All');
+  const [segmentFilter, setSegmentFilter] = useState('All');
   const [dateRange, setDateRange] = useState('All');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -38,27 +36,20 @@ const DashboardPage = ({ onMessage }) => {
     const fetchAdsData = async () => {
       setLoading(true);
       setError(null);
-      // Check if DATA_URL is defined before fetching
-      if (!DATA_URL) {
-        const errMsg = "DATA_URL environment variable is not defined. Please set REACT_APP_DATA_URL in Cloudflare Pages settings.";
-        console.error(errMsg);
-        setError(errMsg);
-        onMessage(errMsg, "error");
-        setLoading(false);
-        return;
-      }
 
+      // Frontend now fetches from our API endpoint
       try {
-        const response = await fetch(DATA_URL);
+        const response = await fetch(API_DATA_ENDPOINT);
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorBody = await response.json();
+          throw new Error(errorBody.message || `HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         const processedData = data.map(item => {
           const dateParts = item.Date?.split('/');
           const parsedDate = dateParts && dateParts.length === 3
             ? new Date(parseInt(dateParts[2], 10), parseInt(dateParts[0], 10) - 1, parseInt(dateParts[1], 10))
-            : null; // Handle invalid date formats gracefully
+            : null;
 
           const impressions = parseInt(item.Impression?.replace(/,/g, '') || '0', 10);
           const clicks = parseInt(item.Click?.replace(/,/g, '') || '0', 10);
@@ -96,12 +87,12 @@ const DashboardPage = ({ onMessage }) => {
             Segment: item['Segment'],
             CostMetric: calculatedCostMetric,
           };
-        }).filter(item => item.Date instanceof Date && !isNaN(item.Date.getTime())); // Filter out invalid dates
+        }).filter(item => item.Date instanceof Date && !isNaN(item.Date.getTime()));
         setAdsData(processedData);
       } catch (e) {
         console.error("Failed to fetch ads data:", e);
-        setError("Failed to load data. Please try again later.");
-        onMessage("Failed to load data. Please try again later.", "error");
+        setError(`Failed to load data: ${e.message}. Please try again later.`);
+        onMessage(`Failed to load data: ${e.message}`, "error");
       } finally {
         setLoading(false);
       }
@@ -110,7 +101,6 @@ const DashboardPage = ({ onMessage }) => {
     fetchAdsData();
   }, [onMessage]);
 
-  // Memoized unique filter options
   const uniquePlatforms = useMemo(() => {
     return ['All', ...new Set(adsData.map(item => item.Platform).filter(p => p && p !== 'All'))];
   }, [adsData]);
@@ -119,11 +109,11 @@ const DashboardPage = ({ onMessage }) => {
     return ['All', ...new Set(adsData.map(item => item.Objective).filter(o => o && o !== 'All'))];
   }, [adsData]);
 
-  const uniqueDevices = useMemo(() => { // This will now be used in JSX
+  const uniqueDevices = useMemo(() => {
     return ['All', ...new Set(adsData.map(item => item.Devices).filter(d => d && d !== 'All'))];
   }, [adsData]);
 
-  const uniqueSegments = useMemo(() => { // This will now be used in JSX
+  const uniqueSegments = useMemo(() => {
     return ['All', ...new Set(adsData.map(item => item.Segment).filter(s => s && s !== 'All'))];
   }, [adsData]);
 
@@ -356,13 +346,11 @@ const DashboardPage = ({ onMessage }) => {
                   <option key={o} value={o}>{o}</option>
                 ))}
               </Select>
-              {/* Added: Device Filter */}
               <Select value={deviceFilter} onChange={(e) => setDeviceFilter(e.target.value)}>
                 {uniqueDevices.map(d => (
                   <option key={d} value={d}>{d}</option>
                 ))}
               </Select>
-              {/* Added: Segment Filter */}
               <Select value={segmentFilter} onChange={(e) => setSegmentFilter(e.target.value)}>
                 {uniqueSegments.map(s => (
                   <option key={s} value={s}>{s}</option>

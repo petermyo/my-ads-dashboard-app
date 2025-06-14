@@ -12,3 +12,5 @@ main = "src/index.js" # This might vary based on your Pages setup
 binding = "DB" # This is the binding name used in your Pages Function (env.DB)
 database_name = "aduserdb" # The name of your D1 database
 database_id = "YOUR_D1_DATABASE_ID" # The ID of your D1 database from Cloudflare dashboard
+[vars]
+REACT_APP_DATA_URL = "" # This should be overridden by the Pages project environment variable

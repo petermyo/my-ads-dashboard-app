@@ -4,9 +4,10 @@ import Input from '../components/Common/Input';
 import Select from '../components/Common/Select';
 import Button from '../components/Common/Button';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
-import { formatCurrency, truncateText } from '../utils/helpers'; // getCostMetricLabel removed as it's not used
+import { formatCurrency, getCostMetricLabel, truncateText } from '../utils/helpers';
 
-const DATA_URL = env.REACT_APP_DATA_URL;
+// Frontend will now call our Pages Function endpoint, not the raw DATA_URL
+const API_DATA_ENDPOINT = '/api/ads-data';
 
 const SummaryPage = ({ onMessage }) => {
   const [adsData, setAdsData] = useState([]);
@@ -29,9 +30,11 @@ const SummaryPage = ({ onMessage }) => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(DATA_URL);
+        // Frontend now fetches from our API endpoint
+        const response = await fetch(API_DATA_ENDPOINT);
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorBody = await response.json();
+          throw new Error(errorBody.message || `HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         const processedData = data.map(item => {
@@ -80,8 +83,8 @@ const SummaryPage = ({ onMessage }) => {
         setAdsData(processedData);
       } catch (e) {
         console.error("Failed to fetch ads data:", e);
-        setError("Failed to load data. Please try again later.");
-        onMessage("Failed to load data. Please try again later.", "error");
+        setError(`Failed to load data: ${e.message}. Please try again later.`);
+        onMessage(`Failed to load data: ${e.message}`, "error");
       } finally {
         setLoading(false);
       }
@@ -157,7 +160,7 @@ const SummaryPage = ({ onMessage }) => {
 
     filteredData.forEach(item => {
       const campaignName = item.Campaign;
-      if (!campaignName) return; // Skip if campaign name is missing
+      if (!campaignName) return;
 
       if (!campaignGroups.has(campaignName)) {
         campaignGroups.set(campaignName, {
