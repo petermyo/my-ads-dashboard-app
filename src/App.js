@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Import components and pages
 import { AuthProvider } from './components/Auth/AuthProvider';
-import PrivateRoute from './components/Auth/PrivateRoute'; // <-- THIS IS THE CORRECT PATH
+import PrivateRoute from './components/Auth/PrivateRoute';
 import Navbar from './components/Navigation/Navbar';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';

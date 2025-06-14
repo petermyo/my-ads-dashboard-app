@@ -4,12 +4,14 @@ import Input from '../components/Common/Input';
 import Select from '../components/Common/Select';
 import Button from '../components/Common/Button';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
-import { formatCurrency, getCostMetricLabel, truncateText } from '../utils/helpers';
+import { formatCurrency, truncateText } from '../utils/helpers'; // Removed getCostMetricLabel
+import { useAuth } from '../components/Auth/AuthProvider'; // Import useAuth
 
 // Frontend will now call our Pages Function endpoint, not the raw DATA_URL
 const API_DATA_ENDPOINT = '/api/ads-data';
 
 const SummaryPage = ({ onMessage }) => {
+  const { currentUser, authToken } = useAuth(); // Get currentUser and authToken from AuthContext
   const [adsData, setAdsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,13 +29,31 @@ const SummaryPage = ({ onMessage }) => {
 
   useEffect(() => {
     const fetchAdsData = async () => {
+      // Only proceed if an authToken exists
+      if (!authToken) {
+        setLoading(false);
+        const errMsg = "Authentication required to view summary data.";
+        setError(errMsg);
+        onMessage(errMsg, "error");
+        return;
+      }
+
       setLoading(true);
       setError(null);
       try {
-        // Frontend now fetches from our API endpoint
-        const response = await fetch(API_DATA_ENDPOINT);
+        // Frontend now fetches from our API endpoint with Authorization header
+        const response = await fetch(API_DATA_ENDPOINT, {
+          headers: {
+            'Authorization': `Bearer ${authToken}` // Include the session key (token)
+          }
+        });
+
         if (!response.ok) {
           const errorBody = await response.json();
+          // Specific message for 401 Unauthorized
+          if (response.status === 401) {
+            throw new Error("Unauthorized: Please log in again.");
+          }
           throw new Error(errorBody.message || `HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
@@ -90,8 +110,17 @@ const SummaryPage = ({ onMessage }) => {
       }
     };
 
-    fetchAdsData();
-  }, [onMessage]);
+    // Only fetch if authToken is available and not already loading/error state
+    if (authToken && !loading && !error) { // Add conditions to prevent redundant fetches
+        fetchAdsData();
+    } else if (!authToken && !loading) {
+        // If no token, and not loading, set immediate error to prompt login.
+        // This handles initial load if not authenticated.
+        const errMsg = "Authentication required to view summary data.";
+        setError(errMsg);
+        onMessage(errMsg, "error");
+    }
+  }, [onMessage, authToken, loading, error]); // Re-run effect when authToken changes
 
   const uniquePlatforms = useMemo(() => {
     return ['All', ...new Set(adsData.map(item => item.Platform).filter(p => p && p !== 'All'))];
@@ -160,7 +189,7 @@ const SummaryPage = ({ onMessage }) => {
 
     filteredData.forEach(item => {
       const campaignName = item.Campaign;
-      if (!campaignName) return;
+      if (!campaignName) return; // Skip if campaign name is missing
 
       if (!campaignGroups.has(campaignName)) {
         campaignGroups.set(campaignName, {
