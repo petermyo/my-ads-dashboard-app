@@ -11,7 +11,7 @@ import { useAuth } from '../components/Auth/AuthProvider'; // Import useAuth
 const API_DATA_ENDPOINT = '/api/ads-data';
 
 const SummaryPage = ({ onMessage }) => {
-  const { currentUser, authToken } = useAuth(); // Get currentUser and authToken from AuthContext
+  const { authToken } = useAuth(); // Removed currentUser as it's not used here
   const [adsData, setAdsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
