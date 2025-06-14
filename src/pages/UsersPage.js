@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
@@ -14,11 +14,9 @@ const UsersPage = ({ onMessage }) => {
   const [editingUser, setEditingUser] = useState(null); // User object being edited
   const [showForm, setShowForm] = useState(false); // Toggle add/edit form
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  // Wrap fetchUsers in useCallback to make it stable,
+  // preventing it from causing infinite loops when added to useEffect dependencies.
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -31,7 +29,11 @@ const UsersPage = ({ onMessage }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [onMessage]); // fetchUsers depends on onMessage
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]); // Added fetchUsers to dependency array
 
   const handleAddUser = async (newUser) => {
     try {

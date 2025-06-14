@@ -4,7 +4,7 @@ import Input from '../components/Common/Input';
 import Select from '../components/Common/Select';
 import Button from '../components/Common/Button';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
-import { formatCurrency, getCostMetricLabel, truncateText } from '../utils/helpers';
+import { formatCurrency, truncateText } from '../utils/helpers'; // getCostMetricLabel removed as it's not used
 
 const DATA_URL = 'https://opensheet.elk.sh/1n66ctdtHrySM957k4TFRYfO6JRmJ9Y5oBGaIMS3g8PY/result';
 

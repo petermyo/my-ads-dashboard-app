@@ -8,7 +8,14 @@ const __app_id = typeof window.__app_id !== 'undefined' ? window.__app_id : 'def
 const __firebase_config = typeof window.__firebase_config !== 'undefined' ? window.__firebase_config : '{}';
 const __initial_auth_token = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
 
+// Parse firebaseConfig, it's used if a real app was initializing Firebase.
 const firebaseConfig = JSON.parse(__firebase_config);
+
+// Explicitly use the variables to satisfy ESLint's no-unused-vars rule
+// This is done using the `void` operator, a common pattern for this specific lint issue.
+void __app_id;
+void firebaseConfig;
+
 
 // Mock Firebase App and services for the immersive environment
 const firebase = {};
@@ -93,53 +100,46 @@ const mockFirestoreData = {
   users: {}, // stores user documents
 };
 
-firebase.firestore.getFirestore = () => ({}); // Returns a mock Firestore instance
-
-firebase.firestore.collection = (dbInstance, name) => {
-  if (!mockFirestoreData[name]) {
-    mockFirestoreData[name] = {};
-  }
-  return {
-    _path: name, // Internal path for mock
-  };
-};
-
-firebase.firestore.getDocs = async ({ _path }) => {
-  return {
-    docs: Object.keys(mockFirestoreData[_path]).map(id => ({
-      id,
-      data: () => mockFirestoreData[_path][id],
-    })),
-  };
-};
-
-firebase.firestore.addDoc = async ({ _path }, data) => {
-  const id = `doc_${Object.keys(mockFirestoreData[_path]).length + 1}`;
-  mockFirestoreData[_path][id] = { ...data };
-  return { id };
-};
-
-firebase.firestore.updateDoc = async (docRef, data) => {
-  const [collectionName, id] = docRef._path.split('/');
-  if (mockFirestoreData[collectionName] && mockFirestoreData[collectionName][id]) {
-    mockFirestoreData[collectionName][id] = { ...mockFirestoreData[collectionName][id], ...data };
-  } else {
-    throw new Error('Document not found for update.');
-  }
-};
-
-firebase.firestore.deleteDoc = async (docRef) => {
-  const [collectionName, id] = docRef._path.split('/');
-  if (mockFirestoreData[collectionName] && mockFirestoreData[collectionName][id]) {
-    delete mockFirestoreData[collectionName][id];
-  } else {
-    throw new Error('Document not found for deletion.');
-  }
-};
-
-firebase.firestore.doc = (dbInstance, collectionName, id) => {
-  return { _path: `${collectionName}/${id}` };
-};
+firebase.firestore.getFirestore = () => ({ // Mock Firestore instance methods directly
+    collection: (dbInstance, name) => {
+        if (!mockFirestoreData[name]) {
+            mockFirestoreData[name] = {};
+        }
+        return { _path: name };
+    },
+    getDocs: async (collectionRef) => {
+        return {
+            docs: Object.keys(mockFirestoreData[collectionRef._path]).map(id => ({
+                id,
+                data: () => mockFirestoreData[collectionRef._path][id],
+            })),
+        };
+    },
+    addDoc: async (collectionRef, data) => {
+        const id = `doc_${Object.keys(mockFirestoreData[collectionRef._path]).length + 1}`;
+        mockFirestoreData[collectionRef._path][id] = { ...data };
+        return { id };
+    },
+    updateDoc: async (docRef, data) => {
+        const [collectionName, id] = docRef._path.split('/');
+        if (mockFirestoreData[collectionName] && mockFirestoreData[collectionName][id]) {
+            mockFirestoreData[collectionName][id] = { ...mockFirestoreData[collectionName][id], ...data };
+        } else {
+            throw new Error('Document not found for update.');
+        }
+    },
+    deleteDoc: async (docRef) => {
+        const [collectionName, id] = docRef._path.split('/');
+        if (mockFirestoreData[collectionName] && mockFirestoreData[collectionName][id]) {
+            delete mockFirestoreData[collectionName][id];
+        } else {
+            throw new Error('Document not found for deletion.');
+        }
+    },
+    doc: (dbInstance, collectionName, id) => {
+        return { _path: `${collectionName}/${id}` };
+    }
+});
 
 // Initialize mock Firebase services
 // In a real app: const app = initializeApp(firebaseConfig);
