@@ -8,22 +8,13 @@ const __app_id = typeof window.__app_id !== 'undefined' ? window.__app_id : 'def
 const __firebase_config = typeof window.__firebase_config !== 'undefined' ? window.__firebase_config : '{}';
 const __initial_auth_token = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
 
-// Parse firebaseConfig, it's used if a real app was initializing Firebase.
 const firebaseConfig = JSON.parse(__firebase_config);
 
 // Explicitly use the variables to satisfy ESLint's no-unused-vars rule
-// This is done using the `void` operator, a common pattern for this specific lint issue.
 void __app_id;
 void firebaseConfig;
 
-
-// Mock Firebase App and services for the immersive environment
-const firebase = {};
-firebase.app = {};
-firebase.auth = {};
-firebase.firestore = {};
-
-// Mock Auth
+// --- Mock Authentication Module ---
 let currentMockUser = null;
 const mockAuthUsers = {
   'test@example.com': { email: 'test@example.com', password: 'password123', uid: 'mock_uid_1', role: 'admin' },
@@ -31,29 +22,29 @@ const mockAuthUsers = {
 };
 const mockAuthListeners = [];
 
-firebase.auth.getAuth = () => ({
-  currentUser: currentMockUser, // Returns the current mock user
+// Mock getAuth function (returns the auth instance)
+export const getAuth = (app) => ({
+  currentUser: currentMockUser,
 });
 
-firebase.auth.signInWithCustomToken = async (authInstance, token) => {
+// Mock Authentication methods (exported individually, accepting auth instance as first arg)
+export const signInWithCustomToken = async (authInstance, token) => {
     if (__initial_auth_token && token === __initial_auth_token) {
         currentMockUser = { uid: 'canvas_user_uid', email: 'canvas_user@example.com' };
         mockAuthListeners.forEach(listener => listener(currentMockUser));
-        console.log('Signed in with custom token.');
         return { user: currentMockUser };
     } else {
         throw new Error('Invalid custom token.');
     }
 };
 
-firebase.auth.signInAnonymously = async (authInstance) => {
+export const signInAnonymously = async (authInstance) => {
     currentMockUser = { uid: crypto.randomUUID(), email: 'anonymous@example.com' };
     mockAuthListeners.forEach(listener => listener(currentMockUser));
-    console.log('Signed in anonymously.');
     return { user: currentMockUser };
 };
 
-firebase.auth.signInWithEmailAndPassword = async (authInstance, email, password) => {
+export const signInWithEmailAndPassword = async (authInstance, email, password) => {
   const user = mockAuthUsers[email];
   if (user && user.password === password) {
     currentMockUser = { uid: user.uid, email: user.email };
@@ -63,7 +54,7 @@ firebase.auth.signInWithEmailAndPassword = async (authInstance, email, password)
   throw new Error('Invalid email or password.');
 };
 
-firebase.auth.createUserWithEmailAndPassword = async (authInstance, email, password) => {
+export const createUserWithEmailAndPassword = async (authInstance, email, password) => {
   if (mockAuthUsers[email]) {
     throw new Error('Email already in use.');
   }
@@ -71,23 +62,22 @@ firebase.auth.createUserWithEmailAndPassword = async (authInstance, email, passw
       throw new Error('Password should be at least 6 characters.');
   }
   const uid = `mock_uid_${Object.keys(mockAuthUsers).length + 1}`;
-  const newUser = { email, password, uid, role: 'viewer' }; // Default role for new users
+  const newUser = { email, password, uid, role: 'viewer' };
   mockAuthUsers[email] = newUser;
-  currentMockUser = { uid, email }; // Auto-sign in new user
+  currentMockUser = { uid, email };
   mockAuthListeners.forEach(listener => listener(currentMockUser));
   return { user: currentMockUser };
 };
 
-firebase.auth.signOut = async (authInstance) => {
+export const signOut = async (authInstance) => {
   currentMockUser = null;
   mockAuthListeners.forEach(listener => listener(null));
 };
 
-firebase.auth.onAuthStateChanged = (authInstance, callback) => {
+export const onAuthStateChanged = (authInstance, callback) => {
   mockAuthListeners.push(callback);
-  callback(currentMockUser); // Immediately call with current state
+  callback(currentMockUser);
   return () => {
-    // Simulate unsubscribe
     const index = mockAuthListeners.indexOf(callback);
     if (index > -1) {
       mockAuthListeners.splice(index, 1);
@@ -95,12 +85,13 @@ firebase.auth.onAuthStateChanged = (authInstance, callback) => {
   };
 };
 
-// Mock Firestore
+// --- Mock Firestore Module ---
 const mockFirestoreData = {
   users: {}, // stores user documents
 };
 
-firebase.firestore.getFirestore = () => ({ // Mock Firestore instance methods directly
+// Mock getFirestore function (returns the firestore instance)
+export const getFirestore = (app) => ({
     collection: (dbInstance, name) => {
         if (!mockFirestoreData[name]) {
             mockFirestoreData[name] = {};
@@ -141,11 +132,10 @@ firebase.firestore.getFirestore = () => ({ // Mock Firestore instance methods di
     }
 });
 
-// Initialize mock Firebase services
-// In a real app: const app = initializeApp(firebaseConfig);
+// Initialize mock Firebase services (app is mocked as well)
 const app = {}; // Mock app object
-export const auth = firebase.auth.getAuth(app);
-export const db = firebase.firestore.getFirestore(app);
+export const auth = getAuth(app); // Call the exported getAuth to get the auth instance
+export const db = getFirestore(app); // Call the exported getFirestore to get the db instance
 
 // Add default admin user to mock Firestore for testing if not already present
 if (!mockFirestoreData.users['doc_1']) {
