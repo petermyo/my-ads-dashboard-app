@@ -9,7 +9,7 @@ import { formatCurrency, truncateText, getCostMetricLabel } from '../utils/helpe
 // Use process.env to access the environment variable set in Cloudflare Pages.
 // For Create React App, client-side environment variables must be prefixed with REACT_APP_.
 // If REACT_APP_DATA_URL is not set, it will fall back to the default opensheet URL.
-const DATA_URL = process.env.DATA_URL;
+const DATA_URL = env.REACT_APP_DATA_URL;
 
 const DashboardPage = ({ onMessage }) => {
   const [adsData, setAdsData] = useState([]);
