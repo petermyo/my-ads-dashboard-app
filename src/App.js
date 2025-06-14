@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Import components and pages
-import { AuthProvider } from './components/Auth/AuthProvider';
-import PrivateRoute from './components/Auth/PrivateRoute';
-import Navbar from './components/Navigation/Navbar';
+import { AuthProvider } from './services/components/Auth/AuthProvider';
+import PrivateRoute from './services/components/Auth/PrivateRoute';
+import Navbar from './services/components/Navigation/Navbar';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import SummaryPage from './pages/SummaryPage';
 import UsersPage from './pages/UsersPage';
 import ReportsPage from './pages/ReportsPage';
-import MessageBox from './components/Common/MessageBox';
+import MessageBox from './services/components/Common/MessageBox';
 
 function App() {
   const [message, setMessage] = useState('');
