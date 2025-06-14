@@ -23,9 +23,8 @@ export async function onRequestPost({ request, env }) {
       }
   
       // Hash the password before storing (IMPORTANT FOR SECURITY)
-      // For a real application, use a strong, asynchronous hashing library like bcrypt.
-      // For this example, we'll use a simple mock hash for demonstration purposes.
-      const hashedPassword = await hashPassword(password); // Implement this hashing function securely
+      // This hashing function MUST be identical to the one in login.js.
+      const hashedPassword = await hashPassword(password);
   
       // Insert user into D1 database
       // D1 bindings are available via env.DB (where DB is your D1 binding name)
@@ -48,6 +47,13 @@ export async function onRequestPost({ request, env }) {
       }
     } catch (error) {
       console.error("Registration API error:", error);
+      // Check if the error is due to unique constraint violation
+      if (error.message.includes("UNIQUE constraint failed")) {
+          return new Response(JSON.stringify({ message: 'Registration failed: An account with this email already exists.' }), {
+              status: 409, // Conflict
+              headers: { 'Content-Type': 'application/json' },
+          });
+      }
       return new Response(JSON.stringify({ message: error.message || 'Internal server error during registration.' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -56,6 +62,7 @@ export async function onRequestPost({ request, env }) {
   }
   
   // --- IMPORTANT: MOCK PASSWORD HASHING ---
+  // This hashing function MUST be identical to the one in login.js.
   // In a production environment, NEVER use a simple hash like this.
   // Use a secure, asynchronous, salt-generating hashing library like Argon2, bcrypt, or scrypt.
   async function hashPassword(password) {
