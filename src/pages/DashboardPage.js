@@ -21,8 +21,8 @@ const DashboardPage = ({ onMessage }) => {
   const [adsNameSearch, setAdsNameSearch] = useState('');
   const [platformFilter, setPlatformFilter] = useState('All');
   const [objectiveFilter, setObjectiveFilter] = useState('All');
-  const [deviceFilter, setDeviceFilter] = useState('All');
-  const [segmentFilter, setSegmentFilter] = useState('All');
+  const [deviceFilter, setDeviceFilter] = useState('All'); // Used for device filter
+  const [segmentFilter, setSegmentFilter] = useState('All'); // Used for segment filter
   const [dateRange, setDateRange] = useState('All');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -119,11 +119,11 @@ const DashboardPage = ({ onMessage }) => {
     return ['All', ...new Set(adsData.map(item => item.Objective).filter(o => o && o !== 'All'))];
   }, [adsData]);
 
-  const uniqueDevices = useMemo(() => {
+  const uniqueDevices = useMemo(() => { // This will now be used in JSX
     return ['All', ...new Set(adsData.map(item => item.Devices).filter(d => d && d !== 'All'))];
   }, [adsData]);
 
-  const uniqueSegments = useMemo(() => {
+  const uniqueSegments = useMemo(() => { // This will now be used in JSX
     return ['All', ...new Set(adsData.map(item => item.Segment).filter(s => s && s !== 'All'))];
   }, [adsData]);
 
@@ -354,6 +354,18 @@ const DashboardPage = ({ onMessage }) => {
               <Select value={objectiveFilter} onChange={(e) => setObjectiveFilter(e.target.value)}>
                 {uniqueObjectives.map(o => (
                   <option key={o} value={o}>{o}</option>
+                ))}
+              </Select>
+              {/* Added: Device Filter */}
+              <Select value={deviceFilter} onChange={(e) => setDeviceFilter(e.target.value)}>
+                {uniqueDevices.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </Select>
+              {/* Added: Segment Filter */}
+              <Select value={segmentFilter} onChange={(e) => setSegmentFilter(e.target.value)}>
+                {uniqueSegments.map(s => (
+                  <option key={s} value={s}>{s}</option>
                 ))}
               </Select>
               <Select value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
