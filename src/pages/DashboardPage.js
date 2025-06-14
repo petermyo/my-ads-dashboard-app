@@ -444,3 +444,5 @@ const DashboardPage = ({ onMessage }) => {
     </main>
   );
 };
+
+export default DashboardPage; // Ensure this line exists and is correct

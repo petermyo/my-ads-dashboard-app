@@ -378,3 +378,5 @@ const SummaryPage = ({ onMessage }) => {
     </main>
   );
 };
+
+export default SummaryPage;
