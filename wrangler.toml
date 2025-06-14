@@ -37,6 +37,6 @@ compatibility_flags = ["nodejs_compat"]
 # 'DATABASE_ID' needs to be replaced with the actual ID of your D1 database
 # from the Cloudflare Dashboard.
 [[d1_databases]]
-binding = "DB" # This MUST match the env variable name in your Worker/Pages Functions (e.g., context.env.DB)
-database_name = "aduserdb" # Optional: A human-readable name for your DB
-database_id = "47348cd6-9639-4e6a-9fa3-dcddf6fd7af8" # <<< IMPORTANT: REPLACE WITH YOUR ACTUAL D1 DATABASE ID
+binding = "DB"
+database_name = "aduserdb"
+database_id = "47348cd6-9639-4e6a-9fa3-dcddf6fd7af8"
