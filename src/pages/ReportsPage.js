@@ -3,8 +3,6 @@ import Card from '../components/Common/Card';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import Button from '../components/Common/Button'; // Added: Import Button component
 
-
-const DATA_URL = env.REACT_APP_DATA_URL;
 const ReportsPage = ({ onMessage }) => {
   // In a real application, this page would fetch and display various reports.
   // For now, it serves as a placeholder.
