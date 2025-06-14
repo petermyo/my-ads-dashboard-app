@@ -1,34 +1,91 @@
-// Import the 'auth' instance and individual auth functions from our mocked firebase.js
-import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from './firebase'; 
+// This service now interacts with Cloudflare Worker API endpoints
+// for user management, replacing the mock Firestore interactions.
 
-export const login = async (email, password) => {
-  try {
-    // Call the imported signInWithEmailAndPassword function, passing the 'auth' instance
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
-  } catch (error) {
-    console.error("Login error:", error.message);
-    throw error; // Re-throw to be caught by UI component
+const API_BASE_URL = '/api'; // Cloudflare Pages Functions are typically served from /api
+
+// Helper function to handle API responses, including potential authorization failures
+const handleApiResponse = async (response) => {
+  if (!response.ok) {
+    const errorData = await response.json();
+    let errorMessage = errorData.message || 'Something went wrong with the API request.';
+
+    if (response.status === 401) {
+      errorMessage = 'Unauthorized: Please log in.';
+      // Optionally redirect to login or clear auth token
+      // localStorage.removeItem('authToken');
+      // window.location.href = '/login';
+    } else if (response.status === 403) {
+      errorMessage = 'Forbidden: You do not have permission.';
+    }
+
+    throw new Error(errorMessage);
   }
+  return response.json();
 };
 
-export const register = async (email, password) => {
+// Helper to get authentication token from localStorage
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('authToken');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }), // Include token if available
+  };
+};
+
+export const getUsers = async () => {
   try {
-    // Call the imported createUserWithEmailAndPassword function, passing the 'auth' instance
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    const data = await handleApiResponse(response);
+    return data; // Assuming data is an array of user objects: [{ id, email, role }, ...]
   } catch (error) {
-    console.error("Registration error:", error.message);
+    console.error("Error fetching users:", error);
     throw error;
   }
 };
 
-export const logout = async () => {
+export const createUser = async (user) => {
   try {
-    // Call the imported signOut function, passing the 'auth' instance
-    await signOut(auth);
+    const response = await fetch(`${API_BASE_URL}/auth/register`, { // Use the register endpoint for creation
+      method: 'POST',
+      headers: getAuthHeaders(), // Public endpoint for register, but good to include if auth is present
+      body: JSON.stringify(user),
+    });
+    const data = await handleApiResponse(response);
+    return data.user; // Assuming the worker returns { user: { id, email, role } }
   } catch (error) {
-    console.error("Logout error:", error.message);
+    console.error("Error creating user:", error);
+    throw error;
+  }
+};
+
+export const updateUser = async (id, updatedUser) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(updatedUser),
+    });
+    await handleApiResponse(response);
+    return { id, ...updatedUser }; // Return updated user structure
+  } catch (error) {
+    console.error("Error updating user:", error);
+    throw error;
+  }
+};
+
+export const deleteUser = async (id) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    await handleApiResponse(response);
+    return true; // Indicate success
+  } catch (error) {
+    console.error("Error deleting user:", error);
     throw error;
   }
 };

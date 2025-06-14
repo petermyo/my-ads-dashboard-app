@@ -1,80 +1,120 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../services/authService';
-import { useAuth } from '../components/Auth/AuthProvider'; // Import useAuth to check current user state
+import Card from '../components/Common/Card';
 import Input from '../components/Common/Input';
 import Button from '../components/Common/Button';
-import Card from '../components/Common/Card';
-import MessageBox from '../components/Common/MessageBox';
+import LoadingSpinner from '../components/Common/LoadingSpinner';
+import MessageBox from '../components/Common/MessageBox'; // Re-use message box
+import { useAuth } from '../components/Auth/AuthProvider'; // Use the new AuthProvider
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [role, setRole] = useState('viewer'); // Default role for registration
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState('error');
+  const [messageType, setMessageType] = useState('info');
+
+  const { login, register } = useAuth(); // Get login and register functions from AuthProvider
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
 
-  useEffect(() => {
-    // If user is already logged in (e.g., via custom token or anonymous), redirect
-    if (currentUser && currentUser.uid) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [currentUser, navigate]);
+  const handleMessage = (msg, type) => {
+    setMessage(msg);
+    setMessageType(type);
+    setTimeout(() => setMessage(''), 5000); // Clear message after 5 seconds
+  };
 
-
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     setMessage(''); // Clear previous messages
+
     try {
-      await login(email, password);
-      setMessageType('success');
-      setMessage('Login successful! Redirecting to dashboard...');
-      // Give time for message to display before redirect
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
+      if (isRegistering) {
+        await register(email, password, role);
+        handleMessage('Registration successful! Please log in.', 'success');
+        setIsRegistering(false); // Switch to login form
+      } else {
+        await login(email, password);
+        handleMessage('Login successful!', 'success');
+        navigate('/dashboard'); // Redirect to dashboard on successful login
+      }
     } catch (error) {
-      setMessageType('error');
-      setMessage(error.message || 'Login failed. Please check your credentials.');
-      console.error("Login error:", error);
+      handleMessage(error.message || 'An error occurred.', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <Card className="text-center max-w-sm w-full">
-        {/* Placeholder for logo - In a real app, ensure this path is correct */}
-        <img src="https://placehold.co/128x128/aabbcc/ffffff?text=LOGO" alt="Company Logo" className="mx-auto mb-6 w-32 h-auto rounded-lg" />
-        <h1 className="text-2xl font-bold text-blue-900 mb-4">Login to Ads Dashboard</h1>
-        <form onSubmit={handleLogin} className="mt-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+      <Card className="w-full max-w-md">
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+          {isRegistering ? 'Register' : 'Login'}
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             type="email"
-            id="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="mb-4"
           />
           <Input
             type="password"
-            id="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="mb-6"
           />
+          {isRegistering && (
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-200 ease-in-out"
+            >
+              <option value="viewer">Viewer</option>
+              <option value="admin">Admin</option>
+            </select>
+          )}
+
           <Button
             type="submit"
-            className="w-full bg-blue-900 text-white hover:bg-blue-800 focus:ring-blue-600"
+            disabled={loading}
+            className="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-3 rounded-lg shadow-md transition duration-300 ease-in-out disabled:opacity-50"
           >
-            Login
+            {loading ? <LoadingSpinner size="sm" /> : (isRegistering ? 'Register' : 'Login')}
           </Button>
         </form>
+
+        <p className="mt-6 text-center text-gray-600">
+          {isRegistering ? (
+            <>
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => setIsRegistering(false)}
+                className="text-blue-900 hover:underline font-medium"
+              >
+                Login
+              </button>
+            </>
+          ) : (
+            <>
+              Don't have an account?{' '}
+              <button
+                type="button"
+                onClick={() => setIsRegistering(true)}
+                className="text-blue-900 hover:underline font-medium"
+              >
+                Register
+              </button>
+            </>
+          )}
+        </p>
       </Card>
-      <MessageBox message={message} type={messageType} />
+      {message && <MessageBox message={message} type={messageType} />}
     </div>
   );
 };

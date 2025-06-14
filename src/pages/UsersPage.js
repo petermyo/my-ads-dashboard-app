@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
+import React, { useState, useEffect, useCallback } from 'react';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import UserList from '../components/UserManagement/UserList';
 import UserForm from '../components/UserManagement/UserForm';
-import { getUsers, createUser, updateUser, deleteUser } from '../services/userService';
-import { register } from '../services/authService'; // Use Firebase Auth's register
+import { getUsers, createUser, updateUser, deleteUser } from '../services/userService'; // Use new userService
+import { useAuth } from '../components/Auth/AuthProvider'; // To check for admin role (conceptual)
 
 const UsersPage = ({ onMessage }) => {
   const [users, setUsers] = useState([]);
@@ -13,37 +13,34 @@ const UsersPage = ({ onMessage }) => {
   const [error, setError] = useState(null);
   const [editingUser, setEditingUser] = useState(null); // User object being edited
   const [showForm, setShowForm] = useState(false); // Toggle add/edit form
+  const { currentUser } = useAuth(); // Get current user from AuthProvider
 
-  // Wrap fetchUsers in useCallback to make it stable,
-  // preventing it from causing infinite loops when added to useEffect dependencies.
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      // In a real app, only an admin would fetch all users.
+      // For now, this is client-side, but the Worker API might enforce this.
       const fetchedUsers = await getUsers();
       setUsers(fetchedUsers);
     } catch (err) {
       setError("Failed to load users.");
-      onMessage("Failed to load users.", "error");
+      onMessage(err.message || "Failed to load users.", "error");
       console.error("Error fetching users:", err);
     } finally {
       setLoading(false);
     }
-  }, [onMessage]); // fetchUsers depends on onMessage
+  }, [onMessage]);
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]); // Added fetchUsers to dependency array
+  }, [fetchUsers]);
 
   const handleAddUser = async (newUser) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      // 1. Create user in Firebase Authentication
-      const userCredential = await register(newUser.email, newUser.password);
-      // userCredential.user.uid can be used to link Firestore document to Auth user
-
-      // 2. Add user details to Firestore (your 'users' collection)
-      await createUser({ email: newUser.email, role: newUser.role, authUid: userCredential.user.uid });
+      // Create user via register endpoint (includes password)
+      await createUser(newUser); // userService.createUser calls /api/auth/register
       onMessage('User added successfully!', 'success');
       setShowForm(false);
       fetchUsers(); // Refresh list
@@ -56,8 +53,8 @@ const UsersPage = ({ onMessage }) => {
   };
 
   const handleUpdateUser = async (id, updatedUser) => {
+    setLoading(true);
     try {
-      setLoading(true);
       await updateUser(id, updatedUser);
       onMessage('User updated successfully!', 'success');
       setEditingUser(null);
@@ -72,10 +69,9 @@ const UsersPage = ({ onMessage }) => {
   };
 
   const handleDeleteUser = async (id) => {
-    // Replaced window.confirm with a simpler internal message for this environment
     if (window.confirm('Are you sure you want to delete this user?')) {
+        setLoading(true);
         try {
-            setLoading(true);
             await deleteUser(id);
             onMessage('User deleted successfully!', 'success');
             fetchUsers(); // Refresh list
@@ -97,6 +93,20 @@ const UsersPage = ({ onMessage }) => {
     setEditingUser(null);
     setShowForm(false);
   };
+
+  // Only allow admin to view/manage users (conceptual check)
+  const isAdmin = currentUser?.role === 'admin';
+
+  if (!isAdmin) {
+    return (
+      <main className="p-4 max-w-7xl mx-auto w-full mt-4 flex-grow">
+        <Card className="text-center py-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Access Denied</h2>
+          <p className="text-gray-600">You must be an administrator to view this page.</p>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <main className="p-4 max-w-7xl mx-auto w-full mt-4 flex-grow">

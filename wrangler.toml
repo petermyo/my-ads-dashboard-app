@@ -1,0 +1,42 @@
+# This is a basic wrangler.toml file for a Cloudflare Pages project
+# that uses Pages Functions (Workers) and a D1 database.
+
+# The name of your Cloudflare Pages project.
+# This should match the project name in your Cloudflare dashboard.
+name = "my-ads-dashboard-app"
+
+# Defines the entry point for your Pages Functions.
+# For Pages Functions, this typically refers to the directory where your functions reside.
+# Cloudflare Pages will automatically detect functions in the 'functions' directory.
+# This 'main' field is more common for standalone Workers, but can be present.
+# For Pages Functions, the system primarily looks for the 'functions' directory.
+# If you don't have a direct Workers script at the root, you can omit 'main'.
+# However, for advanced setups or if you were to have a single worker.js file, it would point there.
+# For standard Pages Functions, this can often be left out or point to a dummy file.
+# We'll include it pointing to a non-existent file for a Pages-only setup,
+# as Pages prioritizes the `functions` directory.
+# main = "_worker.js" # This line is often for Workers-only projects. Pages has its own routing for 'functions'.
+
+# Specifies the directory where your Pages build output is located.
+# This is crucial for Cloudflare Pages to correctly serve your React application's static assets.
+# Your React build output is in the 'build' folder.
+pages_build_output_dir = "./build"
+
+# Specifies the version of the Workers runtime compatibility date.
+# Always use today's date or a recent date to get the latest features and bug fixes.
+compatibility_date = "2025-06-14"
+
+# Compatibility flags enable specific features or changes in the Workers runtime.
+# Common flags include 'nodejs_compat' for Node.js API compatibility.
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database Bindings
+# This section connects your Pages Functions to your D1 database.
+# Replace 'DB' with the actual variable name you used in your functions/_middleware.js
+# and other Pages Functions to access the D1 database (e.g., env.DB).
+# 'DATABASE_ID' needs to be replaced with the actual ID of your D1 database
+# from the Cloudflare Dashboard.
+[[d1_databases]]
+binding = "DB" # This MUST match the env variable name in your Worker/Pages Functions (e.g., context.env.DB)
+database_name = "aduserdb" # Optional: A human-readable name for your DB
+database_id = "47348cd6-9639-4e6a-9fa3-dcddf6fd7af8" # <<< IMPORTANT: REPLACE WITH YOUR ACTUAL D1 DATABASE ID
