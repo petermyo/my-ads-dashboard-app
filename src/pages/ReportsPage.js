@@ -1,6 +1,7 @@
 import React from 'react';
 import Card from '../components/Common/Card';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
+import Button from '../components/Common/Button'; // Added: Import Button component
 
 const ReportsPage = ({ onMessage }) => {
   // In a real application, this page would fetch and display various reports.
