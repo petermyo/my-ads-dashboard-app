@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Outlet } => 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom'; // Corrected syntax: changed '=>' to 'from'
 import { useAuth } from './AuthProvider';
 import LoadingSpinner from '../Common/LoadingSpinner';
 
