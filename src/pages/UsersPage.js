@@ -5,7 +5,7 @@ import LoadingSpinner from '../components/Common/LoadingSpinner';
 import UserList from '../components/UserManagement/UserList';
 import UserForm from '../components/UserManagement/UserForm';
 import { getUsers, createUser, updateUser, deleteUser } from '../services/userService';
-import { register } from '../services/authService'; // Use Firebase Auth's register
+import { register } from '../services/authService'; // Use authService's register (to D1 backend)
 
 const UsersPage = ({ onMessage }) => {
   const [users, setUsers] = useState([]);
@@ -38,15 +38,17 @@ const UsersPage = ({ onMessage }) => {
   const handleAddUser = async (newUser) => {
     try {
       setLoading(true);
-      // 1. Create user in Firebase Authentication
-      // NOTE: This currently calls authService.register which uses the /api/auth/register endpoint.
-      // If `userService.createUser` is intended to create a D1 user record *without* Firebase Auth,
-      // this needs re-evaluation. Assuming `register` handles the Auth part for now.
-      const userCredential = await register(newUser.email, newUser.password, newUser.role); // Pass role for registration
-      // If the backend `register` function returns user data including a unique ID for D1, use that.
-      // For now, assuming `authService.register` provides a user object that can be used for `createUser`.
-      // If your D1 backend for `createUser` expects `authUid`, ensure `authService.register` provides it.
-      await createUser({ email: newUser.email, role: newUser.role, authUid: userCredential.user?.id }); // Assuming userCredential.user.id or similar from D1 registration
+      // 1. Register user via authService (which calls your D1 backend for auth)
+      // The register function now returns { user: { email, role, id } } from D1, not a Firebase UserCredential.
+      const registeredUser = await register(newUser.email, newUser.password, newUser.role);
+
+      // 2. Add user details to Firestore (your 'users' collection) using the ID from D1 registration
+      // If your 'users' collection in Firestore (or D1) uses the same ID as the auth record,
+      // ensure it's passed correctly. Here, assuming registeredUser.id is the unique ID from D1.
+      // If you are only using D1 for user storage, the `createUser` might be redundant or
+      // would simply update the D1 record created by `register`.
+      // For this example, if userService is still tied to a mock Firestore, we pass the info.
+      await createUser({ email: newUser.email, role: newUser.role, id: registeredUser.user.id }); // Use id from D1 registration
 
       onMessage('User added successfully!', 'success');
       setShowForm(false);
