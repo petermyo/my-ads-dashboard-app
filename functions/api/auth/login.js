@@ -15,7 +15,7 @@ export const onRequestPost = async (context) => {
       // In a real application, you would hash the provided password
       // and compare it with the stored hashed password.
       // For this example, we're doing a plain text comparison (INSECURE for production).
-      const { results } = await env.D1_DATABASE.prepare(
+      const { results } = await env.DB.prepare(
         `SELECT id, email, role FROM users WHERE email = ? AND password = ?`
       ).bind(email, password).all();
   
