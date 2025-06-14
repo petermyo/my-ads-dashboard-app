@@ -102,14 +102,14 @@ const LoginPage = () => {
             </>
           ) : (
             <>
-              Don't have an account?{' '}
+              {/* Don't have an account?{' '}
               <button
                 type="button"
                 onClick={() => setIsRegistering(true)}
                 className="text-blue-900 hover:underline font-medium"
               >
                 Register
-              </button>
+              </button> */}
             </>
           )}
         </p>
